@@ -110,8 +110,10 @@ module Resque
     # worker is still alive. It also prunes workers.
     def setup_keepalive_thread
       @keepalive_thread = Thread.new {
+        # stagger keepalive thread to avoid all workers checking
+        # at the same time
+        sleep(KEEPALIVE_INTERVAL * Kernel.rand)
         loop do
-          sleep KEEPALIVE_INTERVAL
           redis.multi do
             redis.set(self, self)
             redis.expire(self, KEEPALIVE_EXPIRE)
@@ -128,6 +130,7 @@ module Resque
           end
           # don't need to do this in a transaction
           Worker.prune_dead_workers unless dont_prune
+          sleep KEEPALIVE_INTERVAL
         end
       }
     end
