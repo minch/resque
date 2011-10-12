@@ -117,10 +117,7 @@ module Resque
         # at the same time
         sleep(KEEPALIVE_INTERVAL * Kernel.rand)
         loop do
-          redis.multi do
-            redis.set(self, self)
-            redis.expire(self, KEEPALIVE_EXPIRE)
-          end
+          redis.setex(self, KEEPALIVE_EXPIRE, self)
           log! "Heartbeat for #{self} | ttl: #{redis.ttl(self)}"
 
           if set_last_prune
