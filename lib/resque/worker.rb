@@ -10,9 +10,6 @@ module Resque
     include Resque::Helpers
     extend Resque::Helpers
 
-    KEEPALIVE_INTERVAL = (ENV['RESQUE_KEEPALIVE_INTERVAL'] || 25).to_i
-    KEEPALIVE_EXPIRE   = (ENV['RESQUE_KEEPALIVE_EXPIRE']   || 60).to_i
-
     # Whether the worker should log basic info to STDOUT
     attr_accessor :verbose
 
@@ -27,6 +24,29 @@ module Resque
     attr_accessor :cant_fork
 
     attr_writer :to_s
+
+    # How often the keepalive thread runs. Unit is in seconds.
+    # This can be adjusted by setting the environment variable RESQUE_KEEPALIVE_INTERVAL
+    def keepalive_interval
+      @keepalive_interval ||= (ENV['RESQUE_KEEPALIVE_INTERVAL'] || 25)
+    end
+
+    # How long before the worker is considered dead if the keepalive isn't run. Unit is in seconds.
+    # This can be adjusted by setting the environment variable RESQUE_KEEPALIVE_EXPIRE
+    # This must be an integer or redis will ERR
+    def keepalive_expire
+      @keepalive_expire ||= (ENV['RESQUE_KEEPALIVE_EXPIRE'] || 60).to_i
+    end
+
+    # How long before we prune_dead_workers. Unit is in seconds.
+    # Must ensure we use an integer for redis.expire.
+    def last_prune_expire
+      return @last_prune_expire if @last_prune_expire
+      @last_prune_expire = (keepalive_interval - 5).to_i
+      @last_prune_expire = 1 if @last_prune_expire < 1
+
+      @last_prune_expire
+    end
 
     # Returns an array of all worker objects.
     def self.all
@@ -115,16 +135,16 @@ module Resque
       @keepalive_thread = Thread.new {
         # stagger keepalive thread to avoid all workers checking
         # at the same time
-        sleep(KEEPALIVE_INTERVAL * Kernel.rand)
+        sleep(keepalive_interval * Kernel.rand)
         loop do
-          redis.setex(self, KEEPALIVE_EXPIRE, self)
+          redis.setex(self, keepalive_expire, self)
           log! "Heartbeat for #{self} | ttl: #{redis.ttl(self)}"
 
           if set_last_prune
             log! "Pruning dead workers"
             Worker.prune_dead_workers
           end
-          sleep KEEPALIVE_INTERVAL
+          sleep keepalive_interval
         end
       }
     end
@@ -142,7 +162,7 @@ module Resque
       return false if redis.get(:last_prune)
       transaction_results = redis.multi do
         redis.setnx(:last_prune, Time.now.to_i)
-        redis.expire(:last_prune, KEEPALIVE_INTERVAL - 5)
+        redis.expire(:last_prune, last_prune_expire)
       end
       transaction_results.first == 1
     end
@@ -399,7 +419,7 @@ module Resque
     # lifecycle on startup.
     def register_worker
       redis.set(self, self)
-      redis.expire(self, KEEPALIVE_EXPIRE)
+      redis.expire(self, keepalive_expire)
       redis.sadd(:workers, self)
       started!
     end
