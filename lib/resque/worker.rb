@@ -41,11 +41,7 @@ module Resque
     # How long before we prune_dead_workers. Unit is in seconds.
     # Must ensure we use an integer for redis.expire.
     def last_prune_expire
-      return @last_prune_expire if @last_prune_expire
-      @last_prune_expire = (keepalive_interval - 5).to_i
-      @last_prune_expire = 1 if @last_prune_expire < 1
-
-      @last_prune_expire
+      @last_prune_expire ||= [1, (keepalive_interval - 5).to_i].max
     end
 
     # Returns an array of all worker objects.
