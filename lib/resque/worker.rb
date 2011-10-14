@@ -20,6 +20,10 @@ module Resque
     # Automatically set if a fork(2) fails.
     attr_accessor :cant_fork
 
+    # Time until the child is killed after sending TERM.
+    # This time is measured in seconds.
+    attr_accessor :kill_child_term_time
+
     attr_writer :to_s
 
     # Returns an array of all worker objects.
@@ -302,7 +306,7 @@ module Resque
         unless Process.waitpid(@child, Process::WNOHANG)
           log! "Sending TERM signal to child #{@child}"
           Process.kill("TERM", @child)
-          50.times do |i|
+          (kill_child_term_time * 10).times do |i|
             sleep(0.1)
             return if Process.waitpid(@child, Process::WNOHANG)
           end

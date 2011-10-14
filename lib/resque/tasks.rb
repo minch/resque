@@ -14,6 +14,7 @@ namespace :resque do
       worker = Resque::Worker.new(*queues)
       worker.verbose = ENV['LOGGING'] || ENV['VERBOSE']
       worker.very_verbose = ENV['VVERBOSE']
+      worker.kill_child_term_time = ENV['RESQUE_KILL_CHILD_TERM_TIME'] || 5
     rescue Resque::NoQueueError
       abort "set QUEUE env var, e.g. $ QUEUE=critical,high rake resque:work"
     end
