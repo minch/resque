@@ -20,20 +20,14 @@ module Resque
     # Automatically set if a fork(2) fails.
     attr_accessor :cant_fork
 
-    attr_writer :to_s
-
     # How often the keepalive thread runs. Unit is in seconds.
-    # This can be adjusted by setting the environment variable RESQUE_KEEPALIVE_INTERVAL
-    def keepalive_interval
-      @keepalive_interval ||= (ENV['RESQUE_KEEPALIVE_INTERVAL'] || 25)
-    end
+    attr_accessor :keepalive_interval
 
     # How long before the worker is considered dead if the keepalive isn't run. Unit is in seconds.
-    # This can be adjusted by setting the environment variable RESQUE_KEEPALIVE_EXPIRE
     # This must be an integer or redis will ERR
-    def keepalive_expire
-      @keepalive_expire ||= (ENV['RESQUE_KEEPALIVE_EXPIRE'] || 60).to_i
-    end
+    attr_accessor :keepalive_expire
+
+    attr_writer :to_s
 
     # How long before we prune_dead_workers. Unit is in seconds.
     # Must ensure we use an integer for redis.expire.

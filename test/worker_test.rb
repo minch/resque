@@ -291,6 +291,8 @@ context "Resque::Worker" do
   test "worker registers keepalive key on startup" do
     worker = Resque::Worker.new(:jobs)
     worker.instance_variable_set(:@to_s, "#{`hostname`.chomp}:1:jobs")
+    worker.keepalive_interval = 25
+    worker.keepalive_expire = 60 # must be an integer
     worker.startup
 
     assert_not_equal -1, Resque.redis.ttl(worker.to_s)
@@ -301,8 +303,8 @@ context "Resque::Worker" do
   test "worker has a heartbeat" do
     worker = Resque::Worker.new(:jobs)
     worker.instance_variable_set(:@to_s, "#{`hostname`.chomp}:1:jobs")
-    worker.instance_variable_set(:@keepalive_interval, 0.01)
-    worker.instance_variable_set(:@keepalive_expire, 1) # must be an integer
+    worker.keepalive_interval = 0.01
+    worker.keepalive_expire = 1 # must be an integer
     worker.startup
     Resque.redis.del(worker.to_s)
     sleep(0.05)
@@ -316,8 +318,8 @@ context "Resque::Worker" do
     workers = [Resque::Worker.new(:jobs), Resque::Worker.new(:jobs)]
     workers.each_with_index do |worker, index|
       worker.instance_variable_set(:@to_s, "#{`hostname`.chomp}:#{index}:jobs")
-      worker.instance_variable_set(:@keepalive_interval, 0.01)
-      worker.instance_variable_set(:@keepalive_expire, 1) # must be an integer
+      worker.keepalive_interval = 0.01
+      worker.keepalive_expire = 1 # must be an integer
       worker.startup
     end
 
