@@ -16,6 +16,7 @@ namespace :resque do
       worker.very_verbose = ENV['VVERBOSE']
       worker.keepalive_interval = (ENV['RESQUE_KEEPALIVE_INTERVAL'] || 25)
       worker.keepalive_expire = (ENV['RESQUE_KEEPALIVE_EXPIRE'] || 60).to_i
+      worker.kill_child_term_time = ENV['RESQUE_KILL_CHILD_TERM_TIME'] || 5
     rescue Resque::NoQueueError
       abort "set QUEUE env var, e.g. $ QUEUE=critical,high rake resque:work"
     end
