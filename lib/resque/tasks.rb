@@ -14,6 +14,8 @@ namespace :resque do
       worker = Resque::Worker.new(*queues)
       worker.verbose = ENV['LOGGING'] || ENV['VERBOSE']
       worker.very_verbose = ENV['VVERBOSE']
+      worker.keepalive_interval = (ENV['RESQUE_KEEPALIVE_INTERVAL'] || 25)
+      worker.keepalive_expire = (ENV['RESQUE_KEEPALIVE_EXPIRE'] || 60).to_i
     rescue Resque::NoQueueError
       abort "set QUEUE env var, e.g. $ QUEUE=critical,high rake resque:work"
     end
